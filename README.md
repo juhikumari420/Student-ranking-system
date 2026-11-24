@@ -1,3 +1,5 @@
+live demo: https://juhikumari420.github.io/student-ranking-system/demo/student_ranking_demo.html
+
 # Student Ranking System
 
 A console application in Java that ranks students by marks. Data Structures and Algorithms (DSA) project, Rungta International Skills University.

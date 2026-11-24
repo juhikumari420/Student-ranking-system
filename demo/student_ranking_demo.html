@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Student Ranking System – Working Prototype</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f4f1ea;--fg:#14213d;--card:#ffffff;--line:#d9d4c7;--accent:#5b21b6;--accent-fg:#ffffff;--term-bg:#101a30;--term-fg:#e8e4da;--err:#b42318;--muted:#5a6275}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1524;--fg:#ece8dd;--card:#1a2440;--line:#2c3a5e;--accent:#a78bfa;--accent-fg:#14102a;--term-bg:#0a0f1c;--term-fg:#e8e4da;--err:#ff8a80;--muted:#a3adc2}}
+:root[data-theme="dark"]{--bg:#0f1524;--fg:#ece8dd;--card:#1a2440;--line:#2c3a5e;--accent:#a78bfa;--accent-fg:#14102a;--term-bg:#0a0f1c;--term-fg:#e8e4da;--err:#ff8a80;--muted:#a3adc2}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:Inter,Arial,sans-serif;line-height:1.5}
+main{max-width:980px;margin:0 auto;padding:24px 16px 40px}
+h1{font-size:28px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 20px}
+.grid{display:grid;grid-template-columns:1fr 1.2fr;gap:16px}
+@media (max-width:760px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+h2{font-size:16px;margin:0 0 10px}
+label{display:block;font-size:14px;margin:8px 0 4px}
+input{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);font-size:16px}
+button{padding:10px 14px;border:0;border-radius:8px;background:var(--accent);color:var(--accent-fg);font-size:15px;font-weight:600;cursor:pointer;margin-top:10px}
+button.alt{background:transparent;color:var(--fg);border:1px solid var(--line)}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+pre{margin:0;background:var(--term-bg);color:var(--term-fg);padding:14px;border-radius:10px;min-height:340px;max-height:520px;overflow:auto;font:14px/1.5 "Courier New",monospace;white-space:pre-wrap}
+.err{color:var(--err)}
+.note{font-size:13px;color:var(--muted);margin-top:8px}
+</style>
+</head>
+<body>
+<main>
+<h1>Student Ranking System</h1>
+<p class="sub">Working prototype of the Java console program: same rules, same messages. Roll numbers start at R101.</p>
+<div class="grid">
+<div>
+<div class="card"><h2>1 · Add Student</h2>
+<label for="nm">Name</label><input id="nm" autocomplete="off">
+<label for="mk">Marks (0 to 100)</label><input id="mk" inputmode="numeric" autocomplete="off">
+<button id="add">Add student</button></div>
+<div class="card"><h2>3 · Search (by Roll or Name)</h2>
+<label for="q">Roll number or name</label><input id="q" autocomplete="off">
+<button id="srch">Search</button></div>
+<div class="card"><h2>Other options</h2>
+<div class="row"><button id="rank">2 · Rank list</button><button id="top">4 · Show topper</button></div>
+<div class="row"><button class="alt" id="save">5 · Save</button><button class="alt" id="clr">Clear all data</button></div>
+<p class="note">Save keeps the records in this browser, like students.txt in the Java program. Saved records load again next time.</p></div>
+</div>
+<div class="card"><h2>Output</h2><pre id="out" aria-live="polite"></pre></div>
+</div>
+</main>
+<script>
+var students=[],count=0,nextRoll=101,KEY="students_txt";
+var out=document.getElementById("out");
+function say(t,bad){var s=document.createElement("span");if(bad)s.className="err";s.textContent=t+"\n";out.appendChild(s);out.scrollTop=out.scrollHeight}
+function parseMarks(s){if(s.length===0||s.length>3)return -1;var v=0;for(var i=0;i<s.length;i++){var c=s.charCodeAt(i);if(c<48||c>57)return -1;v=v*10+(c-48)}return v<=100?v:-1}
+function sameText(a,b){if(a.length!==b.length)return false;for(var i=0;i<a.length;i++){if(a.charAt(i).toLowerCase()!==b.charAt(i).toLowerCase())return false}return true}
+function addStudent(){
+  var name=document.getElementById("nm").value.trim(),m=document.getElementById("mk").value.trim();
+  if(name.length===0||name.indexOf(",")>=0){say("Invalid name. Name cannot be empty or contain a comma.",true);return}
+  var marks=parseMarks(m);
+  if(marks<0){say("Invalid marks. Marks must be between 0 and 100.",true);return}
+  var roll="R"+(nextRoll++);students[count++]={roll:roll,name:name,marks:marks};
+  say("Student added. Roll: "+roll+" | "+name+" | "+marks);
+  document.getElementById("nm").value="";document.getElementById("mk").value="";
+}
+// insertion sort (stable), descending by marks, on a copy
+function sortedCopy(){var a=[];for(var i=0;i<count;i++)a[i]=students[i];
+  for(var i=1;i<count;i++){var key=a[i],j=i-1;while(j>=0&&a[j].marks<key.marks){a[j+1]=a[j];j--}a[j+1]=key}return a}
+function rankList(){if(count===0){say("No students found.");return}
+  var a=sortedCopy();for(var i=0;i<count;i++)say("Rank "+(i+1)+": "+a[i].roll+" | "+a[i].name+" | "+a[i].marks)}
+function search(){var key=document.getElementById("q").value.trim();
+  if(key.length===0){say("Search text cannot be empty.",true);return}
+  var a=sortedCopy(),found=false;
+  for(var i=0;i<count;i++){if(sameText(a[i].roll,key)||sameText(a[i].name,key)){say("Found: "+a[i].roll+" | "+a[i].name+" | "+a[i].marks+" | Rank: "+(i+1));found=true}}
+  if(!found)say("Student not found: "+key,true)}
+function topper(){if(count===0){say("No students found.");return}
+  var max=students[0].marks;for(var i=1;i<count;i++)if(students[i].marks>max)max=students[i].marks;
+  for(var i=0;i<count;i++)if(students[i].marks===max)say("Topper: "+students[i].roll+" | "+students[i].name+" | "+students[i].marks)}
+function save(){try{var lines=[];for(var i=0;i<count;i++)lines.push(students[i].roll+","+students[i].name+","+students[i].marks);
+  localStorage.setItem(KEY,lines.join("\n"));say("Data saved to students.txt (this browser).")}catch(e){say("Could not save in this browser.",true)}}
+function load(){try{var t=localStorage.getItem(KEY);if(!t)return;var L=t.split("\n");
+  for(var i=0;i<L.length;i++){var p=L[i].split(",");if(p.length!==3)continue;var mk=parseMarks(p[2].trim());if(mk<0)continue;
+    students[count++]={roll:p[0].trim(),name:p[1].trim(),marks:mk};var r=parseInt(p[0].trim().substring(1),10);if(!isNaN(r)&&r>=nextRoll)nextRoll=r+1}
+  if(count>0)say("Loaded "+count+" saved record(s).")}catch(e){}}
+function clearAll(){students=[];count=0;nextRoll=101;try{localStorage.removeItem(KEY)}catch(e){}out.textContent="";say("All data cleared.")}
+document.getElementById("add").onclick=addStudent;document.getElementById("rank").onclick=rankList;
+document.getElementById("srch").onclick=search;document.getElementById("top").onclick=topper;
+document.getElementById("save").onclick=save;document.getElementById("clr").onclick=clearAll;
+["nm","mk"].forEach(function(id){document.getElementById(id).addEventListener("keydown",function(e){if(e.key==="Enter")addStudent()})});
+document.getElementById("q").addEventListener("keydown",function(e){if(e.key==="Enter")search()});
+say("Student Ranking System ready. Add a student to begin.");load();
+</script>
+</body>
+</html>
